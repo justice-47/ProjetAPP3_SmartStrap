@@ -1,0 +1,10 @@
+# Variables d’environnement
+.env
+chatBot/.env
+
+# Dépendances
+node_modules/
+
+# Fichiers OS / éditeurs
+.DS_Store
+Thumbs.db
