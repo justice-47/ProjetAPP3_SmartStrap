@@ -1,9 +1,21 @@
 import { Text, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "react-native";
+import { useEffect } from "react";
+import { useRouter } from "expo-router";
+
+
 
 
 export default function splash() {
+    const router = useRouter();
+    useEffect(() => {
+    const timer = setTimeout(() => {
+      router.push("/screens/debut"); // écran suivant
+    }, 5000); // 3 secondes
+
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <SafeAreaView style={styles.container}>
       <Image

@@ -50,24 +50,46 @@ export default function Navigation() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        onPress={() => navigateTo("/screens/test")}
+        onPress={() => navigateTo("/screens/MessagesScreen")}
         style={styles.item}
       >
         <Ionicons
-          name="chatbubble-ellipses-sharp"
-          size={isActive("/screens/test") ? 30 : 25}
-          color={isActive("/screens/test") ? "#00386A" : "#000000ff"}
+          name="chatbubbles"
+          size={isActive("/screens/MessagesScreen") ? 30 : 25}
+          color={isActive("/screens/MessagesScreen") ? "#00386A" : "#000000ff"}
         />
         <Text
           style={[
             styles.label,
             {
-              color: isActive("/screens/test") ? "#00386A" : "#000000ff",
-              fontSize: isActive("/screens/test") ? 16 : 14,
+              color: isActive("/screens/MessagesScreen") ? "#00386A" : "#000000ff",
+              fontSize: isActive("/screens/MessagesScreen") ? 14 : 12,
             },
           ]}
         >
-          Notifications
+          Messages
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => navigateTo("/screens/NotificationsScreen")}
+        style={styles.item}
+      >
+        <Ionicons
+          name="notifications"
+          size={isActive("/screens/NotificationsScreen") ? 30 : 25}
+          color={isActive("/screens/NotificationsScreen") ? "#00386A" : "#000000ff"}
+        />
+        <Text
+          style={[
+            styles.label,
+            {
+              color: isActive("/screens/NotificationsScreen") ? "#00386A" : "#000000ff",
+              fontSize: isActive("/screens/NotificationsScreen") ? 14 : 12,
+            },
+          ]}
+        >
+          Notifs
         </Text>
       </TouchableOpacity>
 
@@ -85,7 +107,7 @@ export default function Navigation() {
             styles.label,
             {
               color: isActive("/screens/profil") ? "#00386A" : "#000000ff",
-              fontSize: isActive("/screens/profil") ? 16 : 14,
+              fontSize: isActive("/screens/profil") ? 14 : 12,
             },
           ]}
         >
@@ -107,11 +129,11 @@ export default function Navigation() {
             styles.label,
             {
               color: isActive("/screens/chatbot") ? "#00386A" : "#000000ff",
-              fontSize: isActive("/screens/chatbot") ? 16 : 14,
+              fontSize: isActive("/screens/chatbot") ? 14 : 12,
             },
           ]}
         >
-          ChatBot
+          IA
         </Text>
       </TouchableOpacity>
     </View>
@@ -127,6 +149,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
     borderRadius: 25,
+    borderBottomLeftRadius:0,
+    borderBottomRightRadius: 0,
     borderTopColor: "#ffffffff",
     position: "absolute",
     bottom: 0,

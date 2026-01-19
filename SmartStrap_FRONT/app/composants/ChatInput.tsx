@@ -3,8 +3,8 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Text,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 interface ChatInputProps {
   value: string;
@@ -19,14 +19,30 @@ export default function ChatInput({
 }: ChatInputProps) {
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Écrivez votre message..."
-        value={value}
-        onChangeText={onChangeText}
-      />
-      <TouchableOpacity style={styles.button} onPress={onSend}>
-        <Text style={styles.buttonText}>Envoyer</Text>
+      <TouchableOpacity style={styles.iconButton}>
+        <Ionicons name="attach" size={28} color="white" />
+      </TouchableOpacity>
+      
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Ecrivez ici........."
+          placeholderTextColor="#999"
+          value={value}
+          onChangeText={onChangeText}
+          multiline={false}
+        />
+        <TouchableOpacity 
+          style={styles.sendButton} 
+          onPress={onSend}
+          disabled={!value.trim()}
+        >
+          <Ionicons name="paper-plane-outline" size={24} color={value.trim() ? "#00386A" : "#CCC"} />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.iconButton}>
+        <Ionicons name="mic-outline" size={28} color="white" />
       </TouchableOpacity>
     </View>
   );
@@ -35,27 +51,31 @@ export default function ChatInput({
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: "#E5E7EB",
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    backgroundColor: "#00386A",
+    alignItems: "center",
+  },
+  iconButton: {
+    padding: 5,
+  },
+  inputContainer: {
+    flex: 1,
+    flexDirection: 'row',
     backgroundColor: "#FFF",
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    height: 44,
+    alignItems: "center",
+    marginHorizontal: 10,
   },
   input: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    fontSize: 15,
+    fontSize: 14,
+    color: "#333",
+    fontFamily: "LeagueSpartan_Regular",
   },
-  button: {
-    marginLeft: 8,
-    backgroundColor: "#4F46E5",
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    justifyContent: "center",
-  },
-  buttonText: {
-    color: "#FFF",
-    fontWeight: "600",
+  sendButton: {
+    padding: 5,
   },
 });

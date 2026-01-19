@@ -1,4 +1,3 @@
-// App.js ou votre composant principal
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
@@ -6,226 +5,344 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
+  TextInput,
+  Image,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; 
+import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
 import Navigation from "../composants/navigation";
-import WeeklyStatsCard from "../composants/carttest";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function App() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [vitals, setVitals] = useState({
-    heartRate: "--",
-    temperature: "--",
-    oxygen: "--",
-    respiratoryRate: "--",
+import { API_URL } from "../../src/config";
+
+export default function ProfileScreen() {
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  
+ 
+  const [profile, setProfile] = useState({
+    nom: "",
+    prenom: "",
+    email: "",
+    age: "",
+    poids: "",
+    taille: "",
+    genre: "Homme",
+    antecedents: "",
+    password: "", 
   });
 
-  const connectBracelet = () => {
-    setIsConnected(true);
-    // Simuler des données de santé (remplacer par une vraie connexion)
-    setVitals({
-      heartRate: "72",
-      temperature: "36.6",
-      oxygen: "98",
-      respiratoryRate: "16",
-    });
+  const [bmi, setBmi] = useState(0);
+  const [bmiStatus, setBmiStatus] = useState("normal");
+  const [bmiColor, setBmiColor] = useState("#4caf50");
+
+  useEffect(() => {
+    const initializeProfile = async () => {
+      const storedId = await AsyncStorage.getItem("userId");
+      if (storedId) {
+        setUserId(storedId);
+        await fetchProfile(storedId);
+      }
+    };
+    
+    initializeProfile();
+  }, []);
+
+  useEffect(() => {
+    calculateBMI();
+  }, [profile.poids, profile.taille]);
+
+  const fetchProfile = async (id: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/users/profile/${id}`);
+      const data = await response.json();
+      if (response.ok) {
+        setProfile({
+          ...profile,
+          nom: data.nom || "",
+          prenom: data.prenom || "",
+          email: data.email || "",
+          age: data.age?.toString() || "",
+          poids: data.poids?.toString() || "",
+          taille: data.taille?.toString() || "",
+          genre: data.genre || "Homme",
+          antecedents: data.antecedents || "",
+        });
+      }
+    } catch (error) {
+      console.log("Error fetching profile:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const disconnectBracelet = () => {
-    setIsConnected(false);
-    setVitals({
-      heartRate: "--",
-      temperature: "--",
-      oxygen: "--",
-      respiratoryRate: "--",
-    });
+  const calculateBMI = () => {
+    const weight = parseFloat(profile.poids);
+    const heightCm = parseFloat(profile.taille);
+    
+    if (weight > 0 && heightCm > 0) {
+      const heightM = heightCm / 100;
+      const bmiValue = weight / (heightM * heightM);
+      setBmi(parseFloat(bmiValue.toFixed(1)));
+      
+      if (bmiValue < 18.5) {
+        setBmiStatus("insuffisance pondérale");
+        setBmiColor("#FFC107");
+      } else if (bmiValue >= 18.5 && bmiValue < 25) {
+        setBmiStatus("normal");
+        setBmiColor("#4caf50");
+      } else if (bmiValue >= 25 && bmiValue < 30) {
+        setBmiStatus("surpoids");
+        setBmiColor("#FF9800");
+      } else {
+        setBmiStatus("obésité");
+        setBmiColor("#f44336");
+      }
+    } else {
+      setBmi(0);
+      setBmiStatus("--");
+      setBmiColor("#e0e0e0");
+    }
   };
 
-  const VitalCard = ({
-    title,
-    value,
-    unit,
-  }: {
-    title: string;
-    value: string;
-    unit: string;
-  }) => (
-    <View style={styles.vitalCard}>
-      <Text style={styles.vitalTitle}>{title}</Text>
-      <View style={styles.vitalValueContainer}>
-        <Text style={styles.vitalValue}>{value}</Text>
-        <Text style={styles.vitalUnit}>{unit}</Text>
-      </View>
-    </View>
-  );
+  const handleUpdate = async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/users/profile/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nom: profile.nom,
+          prenom: profile.prenom,
+          email: profile.email,
+          age: parseInt(profile.age),
+          poids: parseFloat(profile.poids),
+          taille: parseFloat(profile.taille),
+          genre: profile.genre,
+          antecedents: profile.antecedents,
+        }),
+      });
+
+      if (response.ok) {
+        Alert.alert("Succès", "Profil mis à jour avec succès !");
+      } else {
+        Alert.alert("Erreur", "Impossible de mettre à jour le profil.");
+      }
+    } catch (error) {
+      Alert.alert("Erreur", "Une erreur est survenue.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Déconnexion",
+      "Êtes-vous sûr de vouloir vous déconnecter ?",
+      [
+        {
+          text: "Annuler",
+          style: "cancel"
+        },
+        {
+          text: "Se déconnecter",
+          style: "destructive",
+          onPress: async () => {
+            await AsyncStorage.removeItem('userId');
+            await AsyncStorage.removeItem('userName');
+            
+            Alert.alert("Déconnecté", "Vous avez été déconnecté avec succès");
+            router.replace("/screens/LoginScreen"); 
+          }
+        }
+      ]
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Mon Profil</Text>
+        <TouchableOpacity style={styles.settingsButton}>
+          <Ionicons name="settings-outline" size={24} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* En-tête */}
-        <Text style={styles.header}>Connectez votre bracelet</Text>
-
-        {/* Section des constantes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mes constantes</Text>
-
-          <View style={styles.vitalsGrid}>
-            <VitalCard
-              title="Fréquence cardiaque"
-              value={vitals.heartRate}
-              unit="bpm"
+        
+        {/* Avatar Section */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: "https://i.pravatar.cc/300" }} // Placeholder
+              style={styles.avatar}
             />
-            <VitalCard
-              title="Température"
-              value={vitals.temperature}
-              unit="°C"
-            />
-            <VitalCard title="Oxygène (SpO2)" value={vitals.oxygen} unit="%" />
-            <VitalCard
-              title="Fréquence respiratoire"
-              value={vitals.respiratoryRate}
-              unit="/min"
-            />
+            <View style={styles.editIconContainer}>
+              <MaterialIcons name="edit" size={16} color="#FFF" />
+            </View>
           </View>
-
-          {/* Ligne de séparation */}
-          <View style={styles.divider} />
-
-          {/* Couche des constantes */}
-          <View style={styles.constantsLayer}>
-            <Text style={styles.constantsLayerText}>Couche des constantes</Text>
-            <Text style={styles.constantsLayerSubtext}>
-              Surveillance en temps réel des mesures
-            </Text>
-          </View>
+          <Text style={styles.userName}>{profile.nom} {profile.prenom}</Text>
         </View>
 
-        {/* État de connexion */}
-        <View style={styles.connectionSection}>
-          <View
-            style={[
-              styles.connectionStatus,
-              isConnected ? styles.connected : styles.disconnected,
-            ]}
-          >
-            <View style={styles.connectionIndicator}>
-              <View
-                style={[
-                  styles.indicatorDot,
-                  isConnected
-                    ? styles.indicatorConnected
-                    : styles.indicatorDisconnected,
-                ]}
-              />
-              <Text style={styles.connectionStatusText}>
-                {isConnected ? "Bracelet connecté" : "Bracelet non connecté"}
-              </Text>
-            </View>
+        {/* BMI Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Indice de Masse Corporelle</Text>
+          <View style={styles.bmiContainer}>
+            <Text style={styles.bmiValue}>{bmi}</Text>
+            <Text style={[styles.bmiStatus, { color: bmiColor }]}>{bmiStatus}</Text>
+          </View>
+          <View style={styles.bmiBarContainer}>
+            <View style={[styles.bmiBarFill, { backgroundColor: bmiColor, width: `${Math.min((bmi / 40) * 100, 100)}%` }]} />
+          </View>
+          <Text style={styles.bmiFooter}>Calculé À Partir De Votre Poids Et De Votre Taille</Text>
+        </View>
 
-            <TouchableOpacity
-              style={[
-                styles.connectButton,
-                isConnected
-                  ? styles.disconnectButton
-                  : styles.connectButtonActive,
-              ]}
-              onPress={isConnected ? disconnectBracelet : connectBracelet}
-            >
-              <Text style={styles.connectButtonText}>
-                {isConnected ? "Déconnecter" : "Connecter"}
-              </Text>
+        {/* Personal Info Form */}
+        <View style={styles.card}>
+          <Text style={styles.sectionHeader}>Informations Personnelles</Text>
+          
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Nom</Text>
+              <TextInput
+                style={styles.input}
+                value={profile.nom}
+                onChangeText={(text) => setProfile({...profile, nom: text})}
+              />
+            </View>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Prénom</Text>
+              <TextInput
+                style={styles.input}
+                value={profile.prenom}
+                onChangeText={(text) => setProfile({...profile, prenom: text})}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Age</Text>
+              <TextInput
+                style={styles.input}
+                value={profile.age}
+                keyboardType="numeric"
+                onChangeText={(text) => setProfile({...profile, age: text})}
+              />
+            </View>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Poids</Text>
+              <View style={styles.inputWithUnit}>
+                 <TextInput
+                  style={[styles.input, {borderWidth:0, flex:1}]}
+                  value={profile.poids}
+                  keyboardType="numeric"
+                  onChangeText={(text) => setProfile({...profile, poids: text})}
+                />
+                <Text style={styles.unitText}>Kg</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Genre</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={profile.genre}
+                  onValueChange={(itemValue) => setProfile({...profile, genre: itemValue})}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Homme" value="Homme" />
+                  <Picker.Item label="Femme" value="Femme" />
+                </Picker>
+              </View>
+            </View>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Taille</Text>
+              <View style={styles.inputWithUnit}>
+                 <TextInput
+                  style={[styles.input, {borderWidth:0, flex:1}]}
+                  value={profile.taille}
+                  keyboardType="numeric"
+                  onChangeText={(text) => setProfile({...profile, taille: text})}
+                />
+                <Text style={styles.unitText}>Cm</Text>
+              </View>
+            </View>
+          </View>
+
+           <View style={styles.fullInput}>
+              <Text style={styles.label}>Antécédents Medicaux</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={profile.antecedents}
+                multiline
+                numberOfLines={3}
+                onChangeText={(text) => setProfile({...profile, antecedents: text})}
+              />
+            </View>
+             
+            <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
+              <Text style={styles.saveButtonText}>Sauvegarder Les Modification</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Indice de risque respiratoire */}
-          <View style={styles.riskIndexContainer}>
-            <Text style={styles.riskIndexTitle}>
-              Indice de risque respiratoire
-            </Text>
-            <Text style={styles.riskIndexSubtitle}>
-              Précision de l'intelligence artificielle
-            </Text>
-
-            {/* Barre de progression (simulée) */}
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: isConnected ? "85%" : "0%" },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {isConnected ? "85% de précision" : "Non disponible"}
-            </Text>
-          </View>
         </View>
-        <View style={styles.divider} />
-        <View style={styles.connectionSection}>
-          <View
-            style={[
-              styles.connectionStatus,
-              isConnected ? styles.connected : styles.disconnected,
-            ]}
-          >
-            <View style={styles.connectionIndicator}>
-              <View
-                style={[
-                  styles.indicatorDot,
-                  isConnected
-                    ? styles.indicatorConnected
-                    : styles.indicatorDisconnected,
-                ]}
-              />
-              <Text style={styles.connectionStatusText}>
-                {isConnected ? "Bracelet connecté" : "Bracelet non connecté"}
-              </Text>
+
+        <View style={styles.card}>
+           <Text style={styles.sectionHeader}>Sécurité & Confidentialité</Text>
+            
+           <View style={styles.fullInput}>
+              <Text style={styles.label}>Mail</Text>
+              <View style={styles.iconInputContainer}>
+                <MaterialIcons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.iconInput}
+                  value={profile.email}
+                  editable={false} 
+                />
+              </View>
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.connectButton,
-                isConnected
-                  ? styles.disconnectButton
-                  : styles.connectButtonActive,
-              ]}
-              onPress={isConnected ? disconnectBracelet : connectBracelet}
-            >
-              <Text style={styles.connectButtonText}>
-                {isConnected ? "Déconnecter" : "Connecter"}
-              </Text>
+             <View style={styles.fullInput}>
+              <Text style={styles.label}>Mot De Passe</Text>
+               <View style={styles.iconInputContainer}>
+                <FontAwesome5 name="lock" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.iconInput}
+                  value=".................." 
+                  editable={false}
+                  secureTextEntry
+                />
+              </View>
+            </View>
+
+            <View style={styles.encryptionInfo}>
+              <MaterialIcons name="security" size={24} color="#1565C0" />
+              <View style={{marginLeft: 10, flex: 1}}>
+                 <Text style={styles.encryptionTitle}>Données cryptées</Text>
+                 <Text style={styles.encryptionDesc}>Vos données de santé sont cryptées localement et protégées par des protocoles de sécurité avancés</Text>
+              </View>
+            </View>
+
+             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutButtonText}>Se Deconnecter</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Indice de risque respiratoire */}
-          <View style={styles.riskIndexContainer}>
-            <Text style={styles.riskIndexTitle}>
-              Indice de risque respiratoire
-            </Text>
-            <Text style={styles.riskIndexSubtitle}>
-              Précision de l'intelligence artificielle
-            </Text>
-
-            {/* Barre de progression (simulée) */}
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: isConnected ? "85%" : "0%" },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {isConnected ? "85% de précision" : "Non disponible"}
-            </Text>
-            <WeeklyStatsCard
-  heartRateAvg={76}
-  spo2Avg={98}
-/>
-          </View>
         </View>
+
       </ScrollView>
       <Navigation />
     </SafeAreaView>
@@ -235,182 +352,225 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    backgroundColor: "#FFF",
   },
   header: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: 30,
-    marginTop: 10,
-  },
-  section: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 25,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 20,
-  },
-  vitalsGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: "#FFF",
   },
-  vitalCard: {
-    width: "48%",
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
-  },
-  vitalTitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
-  },
-  vitalValueContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-  },
-  vitalValue: {
-    fontSize: 28,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: "700",
-    color: "#2c3e50",
+    color: "#007AFF",
   },
-  vitalUnit: {
-    fontSize: 14,
-    color: "#7f8c8d",
-    marginLeft: 4,
+  backButton: {
+    padding: 5,
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#eaeaea",
+  settingsButton: {
+    padding: 5,
+  },
+  scrollContent: {
+    paddingBottom: 100, 
+  },
+  avatarSection: {
+    alignItems: "center",
     marginVertical: 20,
   },
-  constantsLayer: {
+  avatarContainer: {
+    position: "relative",
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  editIconContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#007AFF",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFF",
   },
-  constantsLayerText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2c3e50",
-    marginBottom: 4,
+  userName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#000",
+    marginTop: 10,
   },
-  constantsLayerSubtext: {
-    fontSize: 14,
-    color: "#7f8c8d",
-    textAlign: "center",
-  },
-  connectionSection: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
+  card: {
+    backgroundColor: "#BBDEFB", 
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 20,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  connectionStatus: {
+  cardTitle: {
+    textAlign: "center",
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
+  },
+  bmiContainer: {
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  bmiValue: {
+    fontSize: 48,
+    fontWeight: "300",
+    color: "#333",
+  },
+  bmiStatus: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: -5,
+  },
+  bmiBarContainer: {
+    height: 6,
+    backgroundColor: "#FFF",
+    borderRadius: 3,
+    marginVertical: 10,
+    overflow: "hidden",
+  },
+  bmiBarFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  bmiFooter: {
+    textAlign: "center",
+    fontSize: 12,
+    color: "#666",
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFF", 
+    alignSelf: 'center',
+    marginBottom: 15,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 1
+  },
+  row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
+    marginBottom: 15,
+  },
+  halfInput: {
+    width: "48%",
+  },
+  fullInput: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 5,
+    marginLeft: 5,
+  },
+  input: {
+    backgroundColor: "#FFF",
     borderRadius: 12,
-    marginBottom: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: "#333",
   },
-  connected: {
-    backgroundColor: "#e8f5e9",
-    borderWidth: 1,
-    borderColor: "#c8e6c9",
+  inputWithUnit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+     backgroundColor: "#FFF",
+    borderRadius: 12,
+    paddingHorizontal: 5,
   },
-  disconnected: {
-    backgroundColor: "#ffebee",
-    borderWidth: 1,
-    borderColor: "#ffcdd2",
+  unitText: {
+    paddingRight: 10,
+    color: '#666'
   },
-  connectionIndicator: {
-    flexDirection: "row",
+  pickerContainer: {
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    overflow: 'hidden',
+    height: 48, 
+    justifyContent: 'center'
+  },
+  picker: {
+    width: '100%',
+     color: "#333",
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: "top",
+  },
+  saveButton: {
+    backgroundColor: "#000",
+    borderRadius: 12,
+    paddingVertical: 15,
     alignItems: "center",
+    marginTop: 10,
   },
-  indicatorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  saveButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  iconInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+  },
+  inputIcon: {
     marginRight: 10,
   },
-  indicatorConnected: {
-    backgroundColor: "#4caf50",
-  },
-  indicatorDisconnected: {
-    backgroundColor: "#f44336",
-  },
-  connectionStatusText: {
+  iconInput: {
+    flex: 1,
+    paddingVertical: 12,
     fontSize: 16,
-    fontWeight: "600",
+    color: "#555",
   },
-  connectButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  connectButtonActive: {
-    backgroundColor: "#2196f3",
-  },
-  disconnectButton: {
-    backgroundColor: "#f44336",
-  },
-  connectButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  riskIndexContainer: {
-    backgroundColor: "#f8f9fa",
+  encryptionInfo: {
+    flexDirection: 'row',
+    backgroundColor: "#2196F3", 
     borderRadius: 12,
-    padding: 20,
+    padding: 15,
+    marginTop: 10,
+    alignItems: 'center',
   },
-  riskIndexTitle: {
-    fontSize: 18,
+  encryptionTitle: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  encryptionDesc: {
+    color: "#E3F2FD",
+    fontSize: 11,
+    marginTop: 2,
+    flexWrap: 'wrap'
+  },
+  logoutButton: {
+    backgroundColor: "transparent",
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: "center",
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#f44336"
+  },
+  logoutButtonText: {
+    color: "#f44336",
     fontWeight: "600",
-    color: "#2c3e50",
-    marginBottom: 4,
-  },
-  riskIndexSubtitle: {
-    fontSize: 14,
-    color: "#7f8c8d",
-    marginBottom: 20,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: "#e0e0e0",
-    borderRadius: 4,
-    overflow: "hidden",
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#4caf50",
-    borderRadius: 4,
-  },
-  progressText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-  },
+    fontSize: 16,
+  }
 });

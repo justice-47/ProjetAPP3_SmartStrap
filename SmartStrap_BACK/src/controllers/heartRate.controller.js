@@ -9,9 +9,9 @@ exports.getHeartRate = async (req, res) => {
       LIMIT 50
     `);
 
-    const history = result.rows.reverse(); // Chronological order (oldest to newest)
+    const history = result.rows.reverse(); 
     const latest = history.length > 0 ? history[history.length - 1] : null;
-        console.log(latest);
+    console.log(latest);
     res.json({
       heartRate: latest ? latest.y : 0,
       heartRateHistory: history

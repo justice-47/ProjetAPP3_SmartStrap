@@ -9,9 +9,11 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { API_URL } from "../config";
+import { API_URL } from "../../src/config";
 import { useRouter } from "expo-router";
 import AppButton from "../composants/boutton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -42,8 +44,17 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (response.ok) {
+        // Sauvegarder l'ID de l'utilisateur pour une utilisation ultérieure
+        await AsyncStorage.setItem("userId", data.user.id.toString());
+        await AsyncStorage.setItem("userName", data.user.nom);
+        
         Alert.alert("Succès", `Bienvenue ${data.user.nom} ! ✅`);
-        router.push("/screens/Accueil");
+        
+        if (data.user.role === 'medecin') {
+          router.push("/screens/DoctorDashboard");
+        } else {
+          router.push("/screens/Accueil");
+        }
       } else {
         Alert.alert("Erreur", data.message || "Identifiants incorrects");
       }
@@ -98,13 +109,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <AppButton
-          titre="Mode Médecin"
-          onPress={() => router.push("/screens/DoctorDashboard")}
-          largeur={"100%"}
-          couleurbouton="#0055FF"
-          couleurtitre="#ffffff"
-        />
         <View style={{ marginBottom: 15 }} />
         <AppButton
           titre="Connexion"

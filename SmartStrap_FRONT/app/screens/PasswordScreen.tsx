@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { API_URL } from "../config";
+import { API_URL } from "../../src/config";
 import { useRouter } from "expo-router";
 
 const PasswordScreen = () => {

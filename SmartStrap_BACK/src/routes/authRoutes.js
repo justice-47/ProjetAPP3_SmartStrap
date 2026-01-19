@@ -115,4 +115,44 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// --- 2. CONNEXION ---
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const result = await db.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email.toLowerCase().trim()]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: "Identifiants incorrects" });
+    }
+
+    const user = result.rows[0];
+
+    // Vérification du mot de passe
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Identifiants incorrects" });
+    }
+
+    // Succès
+    res.status(200).json({
+      message: "Connexion réussie ✅",
+      user: {
+        id: user.id,
+        nom: user.nom,
+        prenom: user.prenom,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error("Erreur login :", error);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
 module.exports = router;
