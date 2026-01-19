@@ -5,6 +5,12 @@ import { BlurView } from 'expo-blur';
 
 const { width } = Dimensions.get('window');
 
+// 1. TYPAGE DES PROPS (Indispensable pour corriger l'erreur TS2322)
+interface HealthInsightsProps {
+  bpm?: number;
+  rpm?: number;
+}
+
 const DAILY_TIPS = [
   {
     id: '1',
@@ -36,91 +42,131 @@ const DAILY_TIPS = [
   }
 ];
 
-export default function HealthInsights() {
+export default function HealthInsights({ bpm, rpm }: HealthInsightsProps) {
   return (
-    <View style={styles.container}>
-      {/* Daily Tips Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Conseils du jour</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          contentContainerStyle={styles.tipsScroll}
-        >
-          {DAILY_TIPS.map(tip => (
-            <BlurView key={tip.id} intensity={30} tint="light" style={styles.tipCard}>
-              <View style={[styles.iconCircle, { backgroundColor: tip.color + '22' }]}>
-                <Ionicons name={tip.icon as any} size={24} color={tip.color} />
-              </View>
-              <Text style={styles.tipTitle}>{tip.title}</Text>
-              <Text style={styles.tipText}>{tip.text}</Text>
-            </BlurView>
-          ))}
-        </ScrollView>
-      </View>
+      <View style={styles.container}>
 
-      {/* Data Understanding Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Comprendre mes données</Text>
-        <View style={styles.guideContainer}>
-          <TouchableOpacity style={styles.guideItem}>
-            <View style={styles.guideLeft}>
-              <MaterialCommunityIcons name="heart-pulse" size={28} color="#FD4755" />
-              <View style={styles.guideText}>
-                <Text style={styles.guideTitle}>Fréquence Cardiaque (BPM)</Text>
-                <Text style={styles.guideDesc}>Repos : 60-100 BPM est considéré comme normal.</Text>
-              </View>
+        {/* 2. ALERTE DYNAMIQUE (Si BPM élevé) */}
+        {(bpm && bpm > 100) ? (
+            <View style={styles.alertBox}>
+              <Ionicons name="warning" size={20} color="#FF4444" />
+              <Text style={styles.alertText}>
+                Rythme cardiaque élevé ({bpm} BPM). Reposez-vous quelques instants.
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#CCC" />
-          </TouchableOpacity>
+        ) : null}
 
-          <View style={styles.divider} />
+        {/* Daily Tips Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Conseils du jour</Text>
+          <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tipsScroll}
+          >
+            {DAILY_TIPS.map(tip => (
+                <BlurView key={tip.id} intensity={30} tint="light" style={styles.tipCard}>
+                  <View style={[styles.iconCircle, { backgroundColor: tip.color + '22' }]}>
+                    <Ionicons name={tip.icon as any} size={24} color={tip.color} />
+                  </View>
+                  <Text style={styles.tipTitle}>{tip.title}</Text>
+                  <Text style={styles.tipText}>{tip.text}</Text>
+                </BlurView>
+            ))}
+          </ScrollView>
+        </View>
 
-          <TouchableOpacity style={styles.guideItem}>
-            <View style={styles.guideLeft}>
-              <MaterialCommunityIcons name="molecule" size={28} color="#58a3f8" />
-              <View style={styles.guideText}>
-                <Text style={styles.guideTitle}>Oxygène (SpO2)</Text>
-                <Text style={styles.guideDesc}>Sain : 95% - 100%. Une valeur {'<'} 92% nécessite attention.</Text>
+        {/* Data Understanding Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Comprendre mes données</Text>
+          <View style={styles.guideContainer}>
+
+            {/* Item BPM */}
+            <TouchableOpacity style={styles.guideItem}>
+              <View style={styles.guideLeft}>
+                <MaterialCommunityIcons name="heart-pulse" size={28} color="#FD4755" />
+                <View style={styles.guideText}>
+                  <Text style={styles.guideTitle}>Fréquence Cardiaque (BPM)</Text>
+                  <Text style={styles.guideDesc}>
+                    Actuel: <Text style={{color: '#FD4755', fontWeight: 'bold'}}>{bpm || '--'}</Text> | Normal: 60-100.
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#CCC" />
-          </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={20} color="#CCC" />
+            </TouchableOpacity>
 
-          <View style={styles.divider} />
+            <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.guideItem}>
-            <View style={styles.guideLeft}>
-              <MaterialCommunityIcons name="broadcast" size={28} color="#00FF88" />
-              <View style={styles.guideText}>
-                <Text style={styles.guideTitle}>Signal Infrarouge (IR AC)</Text>
-                <Text style={styles.guideDesc}>Reflet du flux sanguin pulsatile. Utilisé pour détecter le pouls.</Text>
+            {/* Item RPM (IA) */}
+            <TouchableOpacity style={styles.guideItem}>
+              <View style={styles.guideLeft}>
+                <MaterialCommunityIcons name="lungs" size={28} color="#00386A" />
+                <View style={styles.guideText}>
+                  <Text style={styles.guideTitle}>Fréquence Respiratoire (RPM)</Text>
+                  <Text style={styles.guideDesc}>
+                    Prédit par l&#39;IA: <Text style={{color: '#00386A', fontWeight: 'bold'}}>{rpm ? rpm.toFixed(1) : '--'}</Text>
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#CCC" />
-          </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={20} color="#CCC" />
+            </TouchableOpacity>
 
-          <View style={styles.divider} />
+            <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.guideItem}>
-            <View style={styles.guideLeft}>
-              <MaterialCommunityIcons name="sine-wave" size={28} color="#FF4444" />
-              <View style={styles.guideText}>
-                <Text style={styles.guideTitle}>Signal Rouge (RED AC)</Text>
-                <Text style={styles.guideDesc}>Utilisé avec l'IR pour calculer le taux d'oxygène (SpO2).</Text>
+            {/* Item SpO2 */}
+            <TouchableOpacity style={styles.guideItem}>
+              <View style={styles.guideLeft}>
+                <MaterialCommunityIcons name="molecule" size={28} color="#58a3f8" />
+                <View style={styles.guideText}>
+                  <Text style={styles.guideTitle}>Oxygène (SpO2)</Text>
+                  <Text style={styles.guideDesc}>Sain : 95% - 100%. Une valeur {'<'} 92% nécessite attention.</Text>
+                </View>
               </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#CCC" />
-          </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={20} color="#CCC" />
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            {/* Item IR AC */}
+            <TouchableOpacity style={styles.guideItem}>
+              <View style={styles.guideLeft}>
+                <MaterialCommunityIcons name="broadcast" size={28} color="#00FF88" />
+                <View style={styles.guideText}>
+                  <Text style={styles.guideTitle}>Signal Infrarouge (IR AC)</Text>
+                  <Text style={styles.guideDesc}>Reflet du flux sanguin pulsatile pour détecter le pouls.</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#CCC" />
+            </TouchableOpacity>
+
+          </View>
         </View>
       </View>
-    </View>
   );
 }
 
+// 3. STYLES COMPLETS
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
+  },
+  alertBox: {
+    marginHorizontal: 20,
+    backgroundColor: 'rgba(255, 68, 68, 0.1)',
+    padding: 12,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 68, 68, 0.2)'
+  },
+  alertText: {
+    color: '#CC0000',
+    fontSize: 12,
+    fontFamily: 'LeagueSpartan_Medium',
+    flex: 1
   },
   section: {
     marginBottom: 25,

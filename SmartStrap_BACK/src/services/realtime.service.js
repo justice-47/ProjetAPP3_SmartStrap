@@ -5,32 +5,30 @@ function startRealtimeService() {
   const WS_PORT = process.env.WS_PORT || 8000;
   const UDP_PORT = process.env.UDP_PORT || 8001;
 
-  // 1. Configuration du WebSocket (Pour l'App Mobile)
-  const wss = new WebSocketServer({ port: WS_PORT });
+  const HAR_LABELS = ["Assis", "Marche", "Course"];
 
-  // Map to store userId -> ws connection
+  // 1. Configuration du WebSocket
+  const wss = new WebSocketServer({ port: WS_PORT });
   const userConnections = new Map();
 
   wss.on("connection", (ws, req) => {
-    const clientIp = req.socket.remoteAddress;
-    console.log(`📱 [WS] App connectée ! (IP: ${clientIp})`);
+    console.log(`📱 [WS] App connectée (IP: ${req.socket.remoteAddress})`);
 
     ws.on("message", (message) => {
       try {
         const data = JSON.parse(message);
 
-        // a. Identification de l'utilisateur
+        // Identification de l'utilisateur
         if (data.type === 'IDENTIFY') {
           ws.userId = data.userId;
           userConnections.set(data.userId, ws);
-          console.log(`👤 Utilisateur ${data.userId} identifié sur WS`);
+          console.log(`👤 Utilisateur ${data.userId} identifié.`);
         }
 
-        // b. Message de chat en temps réel
+        // Chat en temps réel
         if (data.type === 'CHAT_MESSAGE') {
           const { receiverId, senderId, content } = data;
           const targetWs = userConnections.get(receiverId);
-          
           if (targetWs && targetWs.readyState === 1) {
             targetWs.send(JSON.stringify({
               type: 'NEW_MESSAGE',
@@ -41,50 +39,57 @@ function startRealtimeService() {
           }
         }
       } catch (err) {
-        console.error("Erreur parsing message WS:", err);
+        console.error("❌ Erreur parsing message WS:", err);
       }
     });
 
     ws.on("close", () => {
-      if (ws.userId) {
-        userConnections.delete(ws.userId);
-        console.log(`📱 [WS] App déconnectée (User: ${ws.userId}).`);
-      } else {
-        console.log(`📱 [WS] App déconnectée.`);
-      }
+      if (ws.userId) userConnections.delete(ws.userId);
+      console.log(`📱 [WS] App déconnectée.`);
     });
   });
 
-  // 3. Configuration de l'UDP (Pour l'ESP32)
+  // 2. Configuration de l'UDP (Réception ESP32)
   const udpServer = dgram.createSocket("udp4");
   let firstPacket = true;
 
   udpServer.on("message", (data, rinfo) => {
     if (firstPacket) {
-      console.log(
-        `📡 [UDP] Premier paquet reçu de l'ESP32 ! (IP: ${rinfo.address})`
-      );
+      console.log(`📡 [UDP] Premier paquet reçu de l'ESP32 ! (IP: ${rinfo.address})`);
       firstPacket = false;
     }
 
-    const raw = data.toString().trim();
-    const values = raw.split(",");
+    try {
+      const raw = data.toString().trim();
+      const values = raw.split(",");
 
-    if (values.length >= 4) {
-      const payload = JSON.stringify({
-        type: 'SENSOR_DATA',
-        ir: values[0],
-        red: values[1],
-        bpm: values[2],
-        spo2: values[3],
-      });
+      // ADAPTATION : Lecture des 5 valeurs envoyées par ton code Arduino
+      // Format attendu: RPM, StateIA, IR_Raw, SpO2, HeartRate
+      if (values.length >= 5) {
+        const stateIndex = parseInt(values[1]);
 
-      // Diffusion vers le mobile (seulement pour l'utilisateur concerné ou tout le monde pour l'instant)
-      wss.clients.forEach((client) => {
-        if (client.readyState === 1) {
-          client.send(payload);
-        }
-      });
+        const payload = JSON.stringify({
+          type: 'SENSOR_DATA',
+          healthData: {
+            rpm: parseFloat(values[0]),           // Respiration (IA)
+            state: stateIndex,                    // Index HAR (IA)
+            stateLabel: HAR_LABELS[stateIndex] || "Inconnu",
+            ir: parseFloat(values[2]),            // Signal IR brut
+            spo2: parseInt(values[3]),            // Oxygène
+            bpm: parseFloat(values[4]),           // Rythme cardiaque
+            timestamp: Date.now()
+          }
+        });
+
+        // Diffusion vers toutes les applications mobiles connectées
+        wss.clients.forEach((client) => {
+          if (client.readyState === 1) {
+            client.send(payload);
+          }
+        });
+      }
+    } catch (e) {
+      console.error("❌ Erreur de parsing UDP:", e);
     }
   });
 
@@ -93,19 +98,14 @@ function startRealtimeService() {
   });
 
   udpServer.bind(UDP_PORT, "0.0.0.0", () => {
-    console.log(`📡 Serveur UDP écoute sur le port ${UDP_PORT}`);
+    console.log(`
+    🚀 SERVICES TEMPS RÉEL DÉMARRÉS
+    -----------------------------------
+    📡 UDP (ESP32)  : Port ${UDP_PORT}
+    📱 WS  (Mobile) : Port ${WS_PORT}
+    -----------------------------------
+    `);
   });
-
-  // Utility to send notification to a specific user
-  startRealtimeService.sendNotification = (userId, notification) => {
-    const ws = userConnections.get(userId);
-    if (ws && ws.readyState === 1) {
-      ws.send(JSON.stringify({
-        type: 'NOTIFICATION',
-        ...notification
-      }));
-    }
-  };
 }
 
 module.exports = { startRealtimeService };
