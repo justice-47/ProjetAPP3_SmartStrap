@@ -1,5 +1,5 @@
 import { Redirect } from "expo-router";
 
 export default function index() {
-  return <Redirect href="./screens/splash" />;
-} 
+  return <Redirect href="./screens/Accueil" />;
+}

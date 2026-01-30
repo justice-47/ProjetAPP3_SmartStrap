@@ -12,20 +12,19 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context"; 
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import Navigation from "../composants/navigation";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { API_URL } from "../../src/config";
+import { API_URL } from "../../config";
 
 export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  
- 
+
   const [profile, setProfile] = useState({
     nom: "",
     prenom: "",
@@ -35,7 +34,7 @@ export default function ProfileScreen() {
     taille: "",
     genre: "Homme",
     antecedents: "",
-    password: "", 
+    password: "",
   });
 
   const [bmi, setBmi] = useState(0);
@@ -50,7 +49,7 @@ export default function ProfileScreen() {
         await fetchProfile(storedId);
       }
     };
-    
+
     initializeProfile();
   }, []);
 
@@ -86,12 +85,12 @@ export default function ProfileScreen() {
   const calculateBMI = () => {
     const weight = parseFloat(profile.poids);
     const heightCm = parseFloat(profile.taille);
-    
+
     if (weight > 0 && heightCm > 0) {
       const heightM = heightCm / 100;
       const bmiValue = weight / (heightM * heightM);
       setBmi(parseFloat(bmiValue.toFixed(1)));
-      
+
       if (bmiValue < 18.5) {
         setBmiStatus("insuffisance pondérale");
         setBmiColor("#FFC107");
@@ -117,9 +116,9 @@ export default function ProfileScreen() {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/users/profile/${userId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           nom: profile.nom,
@@ -147,31 +146,27 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Déconnexion",
-      "Êtes-vous sûr de vouloir vous déconnecter ?",
-      [
-        {
-          text: "Annuler",
-          style: "cancel"
+    Alert.alert("Déconnexion", "Êtes-vous sûr de vouloir vous déconnecter ?", [
+      {
+        text: "Annuler",
+        style: "cancel",
+      },
+      {
+        text: "Se déconnecter",
+        style: "destructive",
+        onPress: async () => {
+          await AsyncStorage.removeItem("userId");
+          await AsyncStorage.removeItem("userName");
+
+          Alert.alert("Déconnecté", "Vous avez été déconnecté avec succès");
+          router.replace("/screens/LoginScreen");
         },
-        {
-          text: "Se déconnecter",
-          style: "destructive",
-          onPress: async () => {
-            await AsyncStorage.removeItem('userId');
-            await AsyncStorage.removeItem('userName');
-            
-            Alert.alert("Déconnecté", "Vous avez été déconnecté avec succès");
-            router.replace("/screens/LoginScreen"); 
-          }
-        }
-      ]
-    );
+      },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mon Profil</Text>
@@ -181,7 +176,6 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
@@ -193,7 +187,9 @@ export default function ProfileScreen() {
               <MaterialIcons name="edit" size={16} color="#FFF" />
             </View>
           </View>
-          <Text style={styles.userName}>{profile.nom} {profile.prenom}</Text>
+          <Text style={styles.userName}>
+            {profile.nom} {profile.prenom}
+          </Text>
         </View>
 
         {/* BMI Card */}
@@ -201,25 +197,37 @@ export default function ProfileScreen() {
           <Text style={styles.cardTitle}>Indice de Masse Corporelle</Text>
           <View style={styles.bmiContainer}>
             <Text style={styles.bmiValue}>{bmi}</Text>
-            <Text style={[styles.bmiStatus, { color: bmiColor }]}>{bmiStatus}</Text>
+            <Text style={[styles.bmiStatus, { color: bmiColor }]}>
+              {bmiStatus}
+            </Text>
           </View>
           <View style={styles.bmiBarContainer}>
-            <View style={[styles.bmiBarFill, { backgroundColor: bmiColor, width: `${Math.min((bmi / 40) * 100, 100)}%` }]} />
+            <View
+              style={[
+                styles.bmiBarFill,
+                {
+                  backgroundColor: bmiColor,
+                  width: `${Math.min((bmi / 40) * 100, 100)}%`,
+                },
+              ]}
+            />
           </View>
-          <Text style={styles.bmiFooter}>Calculé À Partir De Votre Poids Et De Votre Taille</Text>
+          <Text style={styles.bmiFooter}>
+            Calculé À Partir De Votre Poids Et De Votre Taille
+          </Text>
         </View>
 
         {/* Personal Info Form */}
         <View style={styles.card}>
           <Text style={styles.sectionHeader}>Informations Personnelles</Text>
-          
+
           <View style={styles.row}>
             <View style={styles.halfInput}>
               <Text style={styles.label}>Nom</Text>
               <TextInput
                 style={styles.input}
                 value={profile.nom}
-                onChangeText={(text) => setProfile({...profile, nom: text})}
+                onChangeText={(text) => setProfile({ ...profile, nom: text })}
               />
             </View>
             <View style={styles.halfInput}>
@@ -227,7 +235,9 @@ export default function ProfileScreen() {
               <TextInput
                 style={styles.input}
                 value={profile.prenom}
-                onChangeText={(text) => setProfile({...profile, prenom: text})}
+                onChangeText={(text) =>
+                  setProfile({ ...profile, prenom: text })
+                }
               />
             </View>
           </View>
@@ -239,17 +249,19 @@ export default function ProfileScreen() {
                 style={styles.input}
                 value={profile.age}
                 keyboardType="numeric"
-                onChangeText={(text) => setProfile({...profile, age: text})}
+                onChangeText={(text) => setProfile({ ...profile, age: text })}
               />
             </View>
             <View style={styles.halfInput}>
               <Text style={styles.label}>Poids</Text>
               <View style={styles.inputWithUnit}>
-                 <TextInput
-                  style={[styles.input, {borderWidth:0, flex:1}]}
+                <TextInput
+                  style={[styles.input, { borderWidth: 0, flex: 1 }]}
                   value={profile.poids}
                   keyboardType="numeric"
-                  onChangeText={(text) => setProfile({...profile, poids: text})}
+                  onChangeText={(text) =>
+                    setProfile({ ...profile, poids: text })
+                  }
                 />
                 <Text style={styles.unitText}>Kg</Text>
               </View>
@@ -262,7 +274,9 @@ export default function ProfileScreen() {
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={profile.genre}
-                  onValueChange={(itemValue) => setProfile({...profile, genre: itemValue})}
+                  onValueChange={(itemValue) =>
+                    setProfile({ ...profile, genre: itemValue })
+                  }
                   style={styles.picker}
                 >
                   <Picker.Item label="Homme" value="Homme" />
@@ -273,76 +287,92 @@ export default function ProfileScreen() {
             <View style={styles.halfInput}>
               <Text style={styles.label}>Taille</Text>
               <View style={styles.inputWithUnit}>
-                 <TextInput
-                  style={[styles.input, {borderWidth:0, flex:1}]}
+                <TextInput
+                  style={[styles.input, { borderWidth: 0, flex: 1 }]}
                   value={profile.taille}
                   keyboardType="numeric"
-                  onChangeText={(text) => setProfile({...profile, taille: text})}
+                  onChangeText={(text) =>
+                    setProfile({ ...profile, taille: text })
+                  }
                 />
                 <Text style={styles.unitText}>Cm</Text>
               </View>
             </View>
           </View>
 
-           <View style={styles.fullInput}>
-              <Text style={styles.label}>Antécédents Medicaux</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={profile.antecedents}
-                multiline
-                numberOfLines={3}
-                onChangeText={(text) => setProfile({...profile, antecedents: text})}
-              />
-            </View>
-             
-            <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
-              <Text style={styles.saveButtonText}>Sauvegarder Les Modification</Text>
-            </TouchableOpacity>
+          <View style={styles.fullInput}>
+            <Text style={styles.label}>Antécédents Medicaux</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={profile.antecedents}
+              multiline
+              numberOfLines={3}
+              onChangeText={(text) =>
+                setProfile({ ...profile, antecedents: text })
+              }
+            />
+          </View>
 
+          <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
+            <Text style={styles.saveButtonText}>
+              Sauvegarder Les Modification
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
-           <Text style={styles.sectionHeader}>Sécurité & Confidentialité</Text>
-            
-           <View style={styles.fullInput}>
-              <Text style={styles.label}>Mail</Text>
-              <View style={styles.iconInputContainer}>
-                <MaterialIcons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.iconInput}
-                  value={profile.email}
-                  editable={false} 
-                />
-              </View>
+          <Text style={styles.sectionHeader}>Sécurité & Confidentialité</Text>
+
+          <View style={styles.fullInput}>
+            <Text style={styles.label}>Mail</Text>
+            <View style={styles.iconInputContainer}>
+              <MaterialIcons
+                name="mail-outline"
+                size={20}
+                color="#666"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.iconInput}
+                value={profile.email}
+                editable={false}
+              />
             </View>
+          </View>
 
-             <View style={styles.fullInput}>
-              <Text style={styles.label}>Mot De Passe</Text>
-               <View style={styles.iconInputContainer}>
-                <FontAwesome5 name="lock" size={18} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.iconInput}
-                  value=".................." 
-                  editable={false}
-                  secureTextEntry
-                />
-              </View>
+          <View style={styles.fullInput}>
+            <Text style={styles.label}>Mot De Passe</Text>
+            <View style={styles.iconInputContainer}>
+              <FontAwesome5
+                name="lock"
+                size={18}
+                color="#666"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.iconInput}
+                value=".................."
+                editable={false}
+                secureTextEntry
+              />
             </View>
+          </View>
 
-            <View style={styles.encryptionInfo}>
-              <MaterialIcons name="security" size={24} color="#1565C0" />
-              <View style={{marginLeft: 10, flex: 1}}>
-                 <Text style={styles.encryptionTitle}>Données cryptées</Text>
-                 <Text style={styles.encryptionDesc}>Vos données de santé sont cryptées localement et protégées par des protocoles de sécurité avancés</Text>
-              </View>
+          <View style={styles.encryptionInfo}>
+            <MaterialIcons name="security" size={24} color="#1565C0" />
+            <View style={{ marginLeft: 10, flex: 1 }}>
+              <Text style={styles.encryptionTitle}>Données cryptées</Text>
+              <Text style={styles.encryptionDesc}>
+                Vos données de santé sont cryptées localement et protégées par
+                des protocoles de sécurité avancés
+              </Text>
             </View>
+          </View>
 
-             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutButtonText}>Se Deconnecter</Text>
-            </TouchableOpacity>
-
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>Se Deconnecter</Text>
+          </TouchableOpacity>
         </View>
-
       </ScrollView>
       <Navigation />
     </SafeAreaView>
@@ -374,7 +404,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   scrollContent: {
-    paddingBottom: 100, 
+    paddingBottom: 100,
   },
   avatarSection: {
     alignItems: "center",
@@ -408,7 +438,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   card: {
-    backgroundColor: "#BBDEFB", 
+    backgroundColor: "#BBDEFB",
     marginHorizontal: 20,
     marginTop: 20,
     borderRadius: 20,
@@ -453,12 +483,12 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#FFF", 
-    alignSelf: 'center',
+    color: "#FFF",
+    alignSelf: "center",
     marginBottom: 15,
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 1
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   row: {
     flexDirection: "row",
@@ -487,26 +517,26 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   inputWithUnit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-     backgroundColor: "#FFF",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF",
     borderRadius: 12,
     paddingHorizontal: 5,
   },
   unitText: {
     paddingRight: 10,
-    color: '#666'
+    color: "#666",
   },
   pickerContainer: {
     backgroundColor: "#FFF",
     borderRadius: 12,
-    overflow: 'hidden',
-    height: 48, 
-    justifyContent: 'center'
+    overflow: "hidden",
+    height: 48,
+    justifyContent: "center",
   },
   picker: {
-    width: '100%',
-     color: "#333",
+    width: "100%",
+    color: "#333",
   },
   textArea: {
     height: 80,
@@ -525,8 +555,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   iconInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#FFF",
     borderRadius: 12,
     paddingHorizontal: 15,
@@ -541,12 +571,12 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   encryptionInfo: {
-    flexDirection: 'row',
-    backgroundColor: "#2196F3", 
+    flexDirection: "row",
+    backgroundColor: "#2196F3",
     borderRadius: 12,
     padding: 15,
     marginTop: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   encryptionTitle: {
     color: "#FFF",
@@ -557,7 +587,7 @@ const styles = StyleSheet.create({
     color: "#E3F2FD",
     fontSize: 11,
     marginTop: 2,
-    flexWrap: 'wrap'
+    flexWrap: "wrap",
   },
   logoutButton: {
     backgroundColor: "transparent",
@@ -566,11 +596,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
     borderWidth: 1,
-    borderColor: "#f44336"
+    borderColor: "#f44336",
   },
   logoutButtonText: {
     color: "#f44336",
     fontWeight: "600",
     fontSize: 16,
-  }
+  },
 });

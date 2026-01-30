@@ -17,7 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ChatBubble from "../composants/ChatBubble";
 import ChatInput from "../composants/ChatInput";
 import Navigation from "../composants/navigation";
-import { API_URL } from "../../src/config";
+import { API_URL } from "../../config";
 
 export default function ChatbotScreen() {
   const router = useRouter();
@@ -34,12 +34,12 @@ export default function ChatbotScreen() {
   const [input, setInput] = useState("");
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
-  
+
   // Real health context from state
   const [vitals, setVitals] = useState({
     heartRate: 75,
     spo2: 98,
-    age: 25
+    age: 25,
   });
 
   useEffect(() => {
@@ -48,9 +48,11 @@ export default function ChatbotScreen() {
         const storedId = await AsyncStorage.getItem("userId");
         if (storedId) {
           // Fetch user profile for age
-          const userRes = await fetch(`${API_URL}/api/users/profile/${storedId}`);
+          const userRes = await fetch(
+            `${API_URL}/api/users/profile/${storedId}`,
+          );
           const userData = await userRes.json();
-          
+
           // Fetch current vitals
           const hrRes = await fetch(`${API_URL}/api/heart-rate`);
           const hrData = await hrRes.json();
@@ -60,7 +62,7 @@ export default function ChatbotScreen() {
           setVitals({
             heartRate: hrData.heartRate || 75,
             spo2: oxData.spo2 || 98,
-            age: parseInt(userData.age) || 25
+            age: parseInt(userData.age) || 25,
           });
         }
       } catch (err) {
@@ -116,7 +118,8 @@ export default function ChatbotScreen() {
         {
           id: Date.now().toString(),
           sender: "bot",
-          message: data.reply || data.error || "Une erreur inconnue est survenue.",
+          message:
+            data.reply || data.error || "Une erreur inconnue est survenue.",
         },
       ]);
     } catch (error) {
@@ -126,7 +129,8 @@ export default function ChatbotScreen() {
         {
           id: Date.now().toString(),
           sender: "bot",
-          message: "Désolé, j'ai une erreur de connexion. Vérifiez que le serveur est lancé.",
+          message:
+            "Désolé, j'ai une erreur de connexion. Vérifiez que le serveur est lancé.",
         },
       ]);
     } finally {
@@ -139,10 +143,13 @@ export default function ChatbotScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
@@ -167,25 +174,40 @@ export default function ChatbotScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <ChatBubble message={item.message} isUser={item.sender === 'user'} />
+              <ChatBubble
+                message={item.message}
+                isUser={item.sender === "user"}
+              />
             )}
             ListFooterComponent={
               isBotTyping ? (
                 <View style={styles.typingIndicator}>
-                  <Text style={styles.typingText}>L'assistant réfléchit...</Text>
+                  <Text style={styles.typingText}>
+                    L&apos;assistant réfléchit...
+                  </Text>
                 </View>
               ) : null
             }
             contentContainerStyle={styles.chatListContent}
             style={styles.chatList}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-            onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
+            onLayout={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
           />
 
-          <View style={[
-            styles.inputWrapper, 
-            { paddingBottom: isKeyboardVisible ? 10 : 80 + Math.max(insets.bottom, 10) }
-          ]}>
+          <View
+            style={[
+              styles.inputWrapper,
+              {
+                paddingBottom: isKeyboardVisible
+                  ? 10
+                  : 80 + Math.max(insets.bottom, 10),
+              },
+            ]}
+          >
             <ChatInput
               value={input}
               onChangeText={setInput}
@@ -194,7 +216,7 @@ export default function ChatbotScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-      
+
       {/* Navigation Bar - Preserved */}
       {!isKeyboardVisible && <Navigation />}
     </View>
@@ -267,6 +289,6 @@ const styles = StyleSheet.create({
   typingText: {
     fontSize: 12,
     color: "#666",
-    fontStyle: 'italic',
-  }
+    fontStyle: "italic",
+  },
 });

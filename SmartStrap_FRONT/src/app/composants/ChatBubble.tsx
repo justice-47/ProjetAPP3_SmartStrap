@@ -8,12 +8,19 @@ interface ChatBubbleProps {
   avatar?: any;
 }
 
-export default function ChatBubble({ message, isUser, timestamp, avatar }: ChatBubbleProps) {
+export default function ChatBubble({
+  message,
+  isUser,
+  timestamp,
+  avatar,
+}: ChatBubbleProps) {
   // If no avatar is provided, use default robot for bot or account for user
   const isBot = !isUser && !avatar;
 
   return (
-    <View style={[styles.wrapper, isUser ? styles.userWrapper : styles.botWrapper]}>
+    <View
+      style={[styles.wrapper, isUser ? styles.userWrapper : styles.botWrapper]}
+    >
       {!isUser && (
         <View style={styles.avatarContainer}>
           {isBot ? (
@@ -21,14 +28,16 @@ export default function ChatBubble({ message, isUser, timestamp, avatar }: ChatB
               <MaterialCommunityIcons name="robot" size={24} color="white" />
             </View>
           ) : (
-            <Image 
-              source={avatar || require("../../assets/images/photoProfil.jpg")} 
+            <Image
+              source={
+                avatar || require("../../../assets/images/photoProfil.jpg")
+              }
               style={styles.avatar}
             />
           )}
         </View>
       )}
-      
+
       <View style={styles.bubbleContainer}>
         <View
           style={[
@@ -36,13 +45,20 @@ export default function ChatBubble({ message, isUser, timestamp, avatar }: ChatB
             isUser ? styles.userBubble : styles.botBubble,
           ]}
         >
-          <Text style={[styles.text, isUser ? styles.userText : styles.botText]}>
+          <Text
+            style={[styles.text, isUser ? styles.userText : styles.botText]}
+          >
             {message}
           </Text>
         </View>
-        
+
         {timestamp && (
-          <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.botTimestamp]}>
+          <Text
+            style={[
+              styles.timestamp,
+              isUser ? styles.userTimestamp : styles.botTimestamp,
+            ]}
+          >
             {timestamp}
           </Text>
         )}
@@ -50,10 +66,10 @@ export default function ChatBubble({ message, isUser, timestamp, avatar }: ChatB
 
       {isUser && (
         <View style={styles.avatarContainerUser}>
-           <Image 
-             source={require("../../assets/images/photoProfil.jpg")} 
-             style={styles.avatar}
-           />
+          <Image
+            source={require("../../../assets/images/photoProfil.jpg")}
+            style={styles.avatar}
+          />
         </View>
       )}
     </View>
@@ -89,8 +105,8 @@ const styles = StyleSheet.create({
   },
   botAvatar: {
     backgroundColor: "#00386A",
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   bubbleContainer: {
     maxWidth: "75%",
@@ -124,11 +140,11 @@ const styles = StyleSheet.create({
     fontFamily: "LeagueSpartan_Regular",
   },
   userTimestamp: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginRight: 5,
   },
   botTimestamp: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginLeft: 5,
   },
 });

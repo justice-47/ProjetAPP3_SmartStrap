@@ -1,16 +1,22 @@
+import { Text, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StyleSheet } from "react-native";
 import { Image } from "react-native";
-import { Text } from "react-native";
-import AppButton from "../composants/boutton";
+import { useEffect } from "react";
 import { useRouter } from "expo-router";
 
-export default function Debut() {
+export default function splash() {
   const router = useRouter();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.push("/screens/debut"); // écran suivant
+    }, 5000); // 3 secondes
+
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <SafeAreaView style={styles.container}>
       <Image
-        source={require("../../assets/images/logo.png")}
+        source={require("../../../assets/images/logo.png")}
         style={{ width: 300, height: 300, marginBottom: -80 }}
       />
       <Text
@@ -48,46 +54,16 @@ export default function Debut() {
       >
         Bracelet Intelligent
       </Text>
-      <Text
-        style={{
-          fontSize: 16,
-          fontFamily: "LeagueSpartan_Medium",
-          textAlign: "center",
-          justifyContent: "center",
-          margin: 65,
-          marginTop: 30,
-          marginBottom: 60,
-        }}
-      >
-        Suivez votre santé et vos performances en temps réel grâce à Smart
-        Strap. Un bracelet intelligent conçu pour vous accompagner au quotidien.
-      </Text>
-      <AppButton
-        titre="connexion"
-        couleurbouton="#00386A"
-        couleurtitre="#ffffffff"
-        largeur={250}
-        onPress={() => {
-          router.push("/screens/LoginScreen");
-        }}
-      />
-      <AppButton
-        titre="inscription"
-        couleurbouton="#2260FF"
-        couleurtitre="#ffffffff"
-        largeur={250}
-        onPress={() => {
-          router.push("/screens/SignupScreen");
-        }}
-      />
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    marginTop: -120,
     alignItems: "center",
-    marginTop: -80,
+    justifyContent: "center",
+    backgroundColor: "#ffffffff",
   },
 });

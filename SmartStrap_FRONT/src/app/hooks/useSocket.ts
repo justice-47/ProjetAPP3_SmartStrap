@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { WS_URL } from '../../src/config';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useRef, useState } from "react";
+import { WS_URL } from "../../../src/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -19,66 +19,70 @@ export const useSocket = () => {
   }, []);
 
   const connect = async () => {
-    const storedId = await AsyncStorage.getItem('userId');
+    const storedId = await AsyncStorage.getItem("userId");
     const uId = storedId ? parseInt(storedId) : null;
     setUserId(uId);
-    
+
     ws.current = new WebSocket(WS_URL);
 
     ws.current.onopen = () => {
-      console.log('✅ WebSocket connecté');
+      console.log("✅ WebSocket connecté");
       setIsConnected(true);
-      
+
       // S'identifier auprès du serveur
       if (uId) {
-        ws.current?.send(JSON.stringify({
-          type: 'IDENTIFY',
-          userId: uId
-        }));
+        ws.current?.send(
+          JSON.stringify({
+            type: "IDENTIFY",
+            userId: uId,
+          }),
+        );
       }
     };
 
     ws.current.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        
+
         switch (data.type) {
-          case 'SENSOR_DATA':
+          case "SENSOR_DATA":
             setSensorData(data);
             break;
-          case 'NEW_MESSAGE':
+          case "NEW_MESSAGE":
             setLastMessage(data);
             break;
-          case 'NOTIFICATION':
-            setNotifications(prev => [data, ...prev]);
+          case "NOTIFICATION":
+            setNotifications((prev) => [data, ...prev]);
             break;
           default:
-            console.log('Message WS inconnu:', data);
+            console.log("Message WS inconnu:", data);
         }
       } catch (err) {
-        console.error('Erreur parsing message WS:', err);
+        console.error("Erreur parsing message WS:", err);
       }
     };
 
     ws.current.onclose = () => {
-      console.log('❌ WebSocket déconnecté. Tentative de reconnexion...');
+      console.log("❌ WebSocket déconnecté. Tentative de reconnexion...");
       setIsConnected(false);
       setTimeout(connect, 3000);
     };
 
     ws.current.onerror = (e) => {
-      console.error('Erreur WebSocket:', e);
+      console.error("Erreur WebSocket:", e);
     };
   };
 
   const sendMessage = (receiverId: number, content: string) => {
     if (ws.current && isConnected && userId) {
-      ws.current.send(JSON.stringify({
-        type: 'CHAT_MESSAGE',
-        senderId: userId,
-        receiverId,
-        content
-      }));
+      ws.current.send(
+        JSON.stringify({
+          type: "CHAT_MESSAGE",
+          senderId: userId,
+          receiverId,
+          content,
+        }),
+      );
     }
   };
 

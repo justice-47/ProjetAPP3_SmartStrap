@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { API_URL } from "../../src/config";
+import { API_URL } from "../../config";
 import { useRouter } from "expo-router";
 import AppButton from "../composants/boutton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -24,7 +24,7 @@ export default function LoginScreen() {
     if (!email.trim() || !password.trim()) {
       Alert.alert(
         "Champs incomplets",
-        "Veuillez remplir tous les champs (Email et Mot de passe) avant de continuer."
+        "Veuillez remplir tous les champs (Email et Mot de passe) avant de continuer.",
       );
       return;
     }
@@ -47,10 +47,10 @@ export default function LoginScreen() {
         // Sauvegarder l'ID de l'utilisateur pour une utilisation ultérieure
         await AsyncStorage.setItem("userId", data.user.id.toString());
         await AsyncStorage.setItem("userName", data.user.nom);
-        
+
         Alert.alert("Succès", `Bienvenue ${data.user.nom} ! ✅`);
-        
-        if (data.user.role === 'medecin') {
+
+        if (data.user.role === "medecin") {
           router.push("/screens/DoctorDashboard");
         } else {
           router.push("/screens/Accueil");
@@ -62,7 +62,7 @@ export default function LoginScreen() {
       console.error(error);
       Alert.alert(
         "Erreur réseau",
-        "Impossible de joindre le serveur. Vérifiez votre connexion."
+        "Impossible de joindre le serveur. Vérifiez votre connexion.",
       );
     }
   };

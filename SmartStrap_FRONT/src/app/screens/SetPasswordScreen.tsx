@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { API_URL } from "../../src/config";
+import { API_URL } from "../../config";
 
 import { useRouter, useLocalSearchParams } from "expo-router";
 
@@ -46,7 +46,7 @@ export default function SetPasswordScreen() {
     if (password.length < 6) {
       Alert.alert(
         "Erreur",
-        "Le mot de passe doit faire au moins 6 caractères."
+        "Le mot de passe doit faire au moins 6 caractères.",
       );
       return;
     }
@@ -78,7 +78,7 @@ export default function SetPasswordScreen() {
     } catch (error) {
       Alert.alert(
         "Erreur Réseau",
-        "Impossible de joindre le serveur. Vérifiez votre connexion IP."
+        "Impossible de joindre le serveur. Vérifiez votre connexion IP.",
       );
     } finally {
       setLoading(false);

@@ -1,25 +1,14 @@
-import { Text, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Image } from "react-native";
-import { useEffect } from "react";
+import { StyleSheet, Text, Image } from "react-native";
+import AppButton from "../composants/boutton";
 import { useRouter } from "expo-router";
 
-
-
-
-export default function splash() {
-    const router = useRouter();
-    useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push("/screens/debut"); // écran suivant
-    }, 5000); // 3 secondes
-
-    return () => clearTimeout(timer);
-  }, []);
+export default function Debut() {
+  const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
       <Image
-        source={require("../../assets/images/logo.png")}
+        source={require("../../../assets/images/logo.png")}
         style={{ width: 300, height: 300, marginBottom: -80 }}
       />
       <Text
@@ -57,16 +46,46 @@ export default function splash() {
       >
         Bracelet Intelligent
       </Text>
+      <Text
+        style={{
+          fontSize: 16,
+          fontFamily: "LeagueSpartan_Medium",
+          textAlign: "center",
+          justifyContent: "center",
+          margin: 65,
+          marginTop: 30,
+          marginBottom: 60,
+        }}
+      >
+        Suivez votre santé et vos performances en temps réel grâce à Smart
+        Strap. Un bracelet intelligent conçu pour vous accompagner au quotidien.
+      </Text>
+      <AppButton
+        titre="connexion"
+        couleurbouton="#00386A"
+        couleurtitre="#ffffffff"
+        largeur={250}
+        onPress={() => {
+          router.push("/screens/LoginScreen");
+        }}
+      />
+      <AppButton
+        titre="inscription"
+        couleurbouton="#2260FF"
+        couleurtitre="#ffffffff"
+        largeur={250}
+        onPress={() => {
+          router.push("/screens/SignupScreen");
+        }}
+      />
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: -120,
-    alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffffff",
+    alignItems: "center",
+    marginTop: -80,
   },
 });

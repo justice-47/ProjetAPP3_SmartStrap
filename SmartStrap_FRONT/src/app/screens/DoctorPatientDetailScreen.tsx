@@ -1,22 +1,57 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, Dimensions, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Dimensions,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { VictoryChart, VictoryLine, VictoryTheme, VictoryAxis } from "victory-native";
-import { API_URL } from "../../src/config";
+import {
+  VictoryChart,
+  VictoryLine,
+  VictoryTheme,
+  VictoryAxis,
+} from "victory-native";
+import { API_URL } from "../../../src/config";
 
 const { width } = Dimensions.get("window");
 
 const MOCK_DETAIL_STATS = {
-  patient: { age: 45, poids: 75, taille: 178, antecedents: "Hypertension légère, fumeur occasionnel." },
-  heartRate: [{ valeur: 75 }, { valeur: 78 }, { valeur: 72 }, { valeur: 80 }, { valeur: 76 }, { valeur: 74 }],
-  oxygenRate: [{ valeur: 98 }, { valeur: 97 }, { valeur: 99 }, { valeur: 98 }, { valeur: 96 }, { valeur: 98 }]
+  patient: {
+    age: 45,
+    poids: 75,
+    taille: 178,
+    antecedents: "Hypertension légère, fumeur occasionnel.",
+  },
+  heartRate: [
+    { valeur: 75 },
+    { valeur: 78 },
+    { valeur: 72 },
+    { valeur: 80 },
+    { valeur: 76 },
+    { valeur: 74 },
+  ],
+  oxygenRate: [
+    { valeur: 98 },
+    { valeur: 97 },
+    { valeur: 99 },
+    { valeur: 98 },
+    { valeur: 96 },
+    { valeur: 98 },
+  ],
 };
 
 export default function DoctorPatientDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   // Handle params that might be arrays
-  const patientId = Array.isArray(params.patientId) ? params.patientId[0] : params.patientId;
+  const patientId = Array.isArray(params.patientId)
+    ? params.patientId[0]
+    : params.patientId;
   const name = Array.isArray(params.name) ? params.name[0] : params.name;
 
   const [stats, setStats] = useState<any>(null);
@@ -25,11 +60,13 @@ export default function DoctorPatientDetailScreen() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        if (!patientId || Number(patientId) > 1000) { 
-           // Mock handling
+        if (!patientId || Number(patientId) > 1000) {
+          // Mock handling
         }
 
-        const response = await fetch(`${API_URL}/api/doctor/patient-stats/${patientId}`);
+        const response = await fetch(
+          `${API_URL}/api/doctor/patient-stats/${patientId}`,
+        );
         const data = await response.json();
         if (response.ok && data.patient) {
           setStats(data);
@@ -56,7 +93,8 @@ export default function DoctorPatientDetailScreen() {
 
   // Helper to format chart data
   const getGraphData = (data: any[]) => {
-    if (!data || !Array.isArray(data) || data.length === 0) return [{ x: 1, y: 0 }];
+    if (!data || !Array.isArray(data) || data.length === 0)
+      return [{ x: 1, y: 0 }];
     return data.map((d, i) => ({ x: i + 1, y: Number(d.valeur) })).reverse();
   };
 
@@ -64,7 +102,10 @@ export default function DoctorPatientDetailScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Text style={styles.backButtonText}>← Retour</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{name}</Text>
@@ -76,20 +117,22 @@ export default function DoctorPatientDetailScreen() {
         <View style={styles.card}>
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{name ? (name as string).charAt(0) : "P"}</Text>
+              <Text style={styles.avatarText}>
+                {name ? (name as string).charAt(0) : "P"}
+              </Text>
             </View>
             <View>
               <Text style={styles.patientName}>{name}</Text>
               <Text style={styles.patientId}>ID: #{patientId}</Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.messageButton}
               onPress={() => router.push("/screens/chatbot")}
             >
               <Text style={styles.messageButtonText}>Message</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Age</Text>
@@ -97,11 +140,15 @@ export default function DoctorPatientDetailScreen() {
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Poids</Text>
-              <Text style={styles.infoValue}>{stats?.patient?.poids || "--"} kg</Text>
+              <Text style={styles.infoValue}>
+                {stats?.patient?.poids || "--"} kg
+              </Text>
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Taille</Text>
-              <Text style={styles.infoValue}>{stats?.patient?.taille || "--"} cm</Text>
+              <Text style={styles.infoValue}>
+                {stats?.patient?.taille || "--"} cm
+              </Text>
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Sang</Text>
@@ -110,9 +157,11 @@ export default function DoctorPatientDetailScreen() {
           </View>
 
           <View style={styles.divider} />
-          
+
           <Text style={styles.sectionTitle}>Antécédents</Text>
-          <Text style={styles.bodyText}>{stats?.patient?.antecedents || "Aucun antécédent signalé."}</Text>
+          <Text style={styles.bodyText}>
+            {stats?.patient?.antecedents || "Aucun antécédent signalé."}
+          </Text>
         </View>
 
         {/* Vitals Charts */}
@@ -124,17 +173,18 @@ export default function DoctorPatientDetailScreen() {
             theme={VictoryTheme.material}
             padding={{ top: 20, bottom: 40, left: 40, right: 20 }}
           >
-             <VictoryAxis
+            <VictoryAxis
               style={{
-                axis: {stroke: "#756f6a"},
-                axisLabel: {fontSize: 12, padding: 30},
-                tickLabels: {fontSize: 10, padding: 5}
+                axis: { stroke: "#756f6a" },
+                axisLabel: { fontSize: 12, padding: 30 },
+                tickLabels: { fontSize: 10, padding: 5 },
               }}
             />
-             <VictoryAxis dependentAxis
+            <VictoryAxis
+              dependentAxis
               style={{
-                axis: {stroke: "#756f6a"},
-                tickLabels: {fontSize: 10, padding: 5}
+                axis: { stroke: "#756f6a" },
+                tickLabels: { fontSize: 10, padding: 5 },
               }}
             />
             <VictoryLine
@@ -144,7 +194,7 @@ export default function DoctorPatientDetailScreen() {
               data={getGraphData(stats?.heartRate)}
               animate={{
                 duration: 2000,
-                onLoad: { duration: 1000 }
+                onLoad: { duration: 1000 },
               }}
             />
           </VictoryChart>
@@ -158,17 +208,18 @@ export default function DoctorPatientDetailScreen() {
             theme={VictoryTheme.material}
             padding={{ top: 20, bottom: 40, left: 40, right: 20 }}
           >
-             <VictoryAxis
+            <VictoryAxis
               style={{
-                axis: {stroke: "#756f6a"},
-                axisLabel: {fontSize: 12, padding: 30},
-                tickLabels: {fontSize: 10, padding: 5}
+                axis: { stroke: "#756f6a" },
+                axisLabel: { fontSize: 12, padding: 30 },
+                tickLabels: { fontSize: 10, padding: 5 },
               }}
             />
-             <VictoryAxis dependentAxis
+            <VictoryAxis
+              dependentAxis
               style={{
-                axis: {stroke: "#756f6a"},
-                tickLabels: {fontSize: 10, padding: 5}
+                axis: { stroke: "#756f6a" },
+                tickLabels: { fontSize: 10, padding: 5 },
               }}
             />
             <VictoryLine
@@ -178,12 +229,11 @@ export default function DoctorPatientDetailScreen() {
               data={getGraphData(stats?.oxygenRate)}
               animate={{
                 duration: 2000,
-                onLoad: { duration: 1000 }
+                onLoad: { duration: 1000 },
               }}
             />
           </VictoryChart>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -248,7 +298,17 @@ const styles = StyleSheet.create({
   infoLabel: { color: "#6b7280", fontSize: 12, marginBottom: 4 },
   infoValue: { fontWeight: "bold", fontSize: 16, color: "#111827" },
   divider: { height: 1, backgroundColor: "#e5e7eb", marginBottom: 15 },
-  sectionTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 10, color: "#374151" },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#374151",
+  },
   bodyText: { color: "#4b5563", lineHeight: 20 },
-  cardTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 15, color: "#111827" },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 15,
+    color: "#111827",
+  },
 });

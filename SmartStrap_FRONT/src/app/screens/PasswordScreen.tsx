@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { API_URL } from "../../src/config";
+import { API_URL } from "../../config";
 import { useRouter } from "expo-router";
 
 const PasswordScreen = () => {
@@ -41,7 +41,7 @@ const PasswordScreen = () => {
     } catch (error) {
       Alert.alert(
         "Erreur réseau",
-        "Serveur injoignable (Vérifiez le port 5000)"
+        "Serveur injoignable (Vérifiez le port 5000)",
       );
     } finally {
       setLoading(false);

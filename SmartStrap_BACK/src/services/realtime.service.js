@@ -4,108 +4,49 @@ const { WebSocketServer } = require("ws");
 function startRealtimeService() {
   const WS_PORT = process.env.WS_PORT || 8000;
   const UDP_PORT = process.env.UDP_PORT || 8001;
+  const HAR_LABELS = ["Repos", "Marche", "Course"];
 
-  const HAR_LABELS = ["Assis", "Marche", "Course"];
-
-  // 1. Configuration du WebSocket
   const wss = new WebSocketServer({ port: WS_PORT });
-  const userConnections = new Map();
-
-  wss.on("connection", (ws, req) => {
-    console.log(`📱 [WS] App connectée (IP: ${req.socket.remoteAddress})`);
-
-    ws.on("message", (message) => {
-      try {
-        const data = JSON.parse(message);
-
-        // Identification de l'utilisateur
-        if (data.type === 'IDENTIFY') {
-          ws.userId = data.userId;
-          userConnections.set(data.userId, ws);
-          console.log(`👤 Utilisateur ${data.userId} identifié.`);
-        }
-
-        // Chat en temps réel
-        if (data.type === 'CHAT_MESSAGE') {
-          const { receiverId, senderId, content } = data;
-          const targetWs = userConnections.get(receiverId);
-          if (targetWs && targetWs.readyState === 1) {
-            targetWs.send(JSON.stringify({
-              type: 'NEW_MESSAGE',
-              senderId,
-              content,
-              timestamp: new Date().toISOString()
-            }));
-          }
-        }
-      } catch (err) {
-        console.error("❌ Erreur parsing message WS:", err);
-      }
-    });
-
-    ws.on("close", () => {
-      if (ws.userId) userConnections.delete(ws.userId);
-      console.log(`📱 [WS] App déconnectée.`);
-    });
-  });
-
-  // 2. Configuration de l'UDP (Réception ESP32)
   const udpServer = dgram.createSocket("udp4");
-  let firstPacket = true;
 
-  udpServer.on("message", (data, rinfo) => {
-    if (firstPacket) {
-      console.log(`📡 [UDP] Premier paquet reçu de l'ESP32 ! (IP: ${rinfo.address})`);
-      firstPacket = false;
+  udpServer.on("message", (data) => {
+    const vals = data.toString().split(",");
+    if (vals.length < 5) return;
+
+    const rpm = parseFloat(vals[0]),
+      state = parseInt(vals[1]);
+    const ir = parseFloat(vals[2]),
+      spo2 = parseInt(vals[3]),
+      bpm = parseFloat(vals[4]);
+
+    let status = "Normal",
+      severity = "info",
+      msg = "";
+
+    // Logique Asthme / Apnée
+    if (state === 0 && rpm < 8 && spo2 < 92) {
+      status = "Apnée";
+      severity = "critical";
+      msg = "Arrêt respiratoire suspecté !";
+    } else if (rpm > 25 && bpm > 110 && spo2 < 94) {
+      status = "Asthme";
+      severity = "critical";
+      msg = "Crise d'asthme probable !";
     }
 
-    try {
-      const raw = data.toString().trim();
-      const values = raw.split(",");
+    const payload = JSON.stringify({
+      type: "SENSOR_DATA",
+      healthData: { rpm, bpm, spo2, ir, state, stateLabel: HAR_LABELS[state] },
+      diagnosis: { status, message: msg, severity },
+    });
 
-      // ADAPTATION : Lecture des 5 valeurs envoyées par ton code Arduino
-      // Format attendu: RPM, StateIA, IR_Raw, SpO2, HeartRate
-      if (values.length >= 5) {
-        const stateIndex = parseInt(values[1]);
-
-        const payload = JSON.stringify({
-          type: 'SENSOR_DATA',
-          healthData: {
-            rpm: parseFloat(values[0]),           // Respiration (IA)
-            state: stateIndex,                    // Index HAR (IA)
-            stateLabel: HAR_LABELS[stateIndex] || "Inconnu",
-            ir: parseFloat(values[2]),            // Signal IR brut
-            spo2: parseInt(values[3]),            // Oxygène
-            bpm: parseFloat(values[4]),           // Rythme cardiaque
-            timestamp: Date.now()
-          }
-        });
-
-        // Diffusion vers toutes les applications mobiles connectées
-        wss.clients.forEach((client) => {
-          if (client.readyState === 1) {
-            client.send(payload);
-          }
-        });
-      }
-    } catch (e) {
-      console.error("❌ Erreur de parsing UDP:", e);
-    }
+    wss.clients.forEach((c) => {
+      if (c.readyState === 1) c.send(payload);
+    });
   });
 
-  udpServer.on("error", (err) => {
-    console.error(`❌ [UDP] Erreur: ${err.stack}`);
-  });
-
-  udpServer.bind(UDP_PORT, "0.0.0.0", () => {
-    console.log(`
-    🚀 SERVICES TEMPS RÉEL DÉMARRÉS
-    -----------------------------------
-    📡 UDP (ESP32)  : Port ${UDP_PORT}
-    📱 WS  (Mobile) : Port ${WS_PORT}
-    -----------------------------------
-    `);
-  });
+  udpServer.bind(UDP_PORT);
+  return { wss, udpServer };
 }
 
 module.exports = { startRealtimeService };
