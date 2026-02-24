@@ -1,6 +1,6 @@
-import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
 import { Canvas, Path } from "@shopify/react-native-skia";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function PPGChart({
   pathIR,

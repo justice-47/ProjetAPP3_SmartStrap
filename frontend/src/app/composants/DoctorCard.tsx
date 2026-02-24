@@ -1,6 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
-import { Ionicons, FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface DoctorCardProps {
   name: string;
@@ -9,7 +9,12 @@ interface DoctorCardProps {
   onInfoPress?: () => void;
 }
 
-export default function DoctorCard({ name, specialty, image, onInfoPress }: DoctorCardProps) {
+export default function DoctorCard({
+  name,
+  specialty,
+  image,
+  onInfoPress,
+}: DoctorCardProps) {
   return (
     <View style={styles.card}>
       <View style={styles.imageContainer}>
@@ -18,24 +23,28 @@ export default function DoctorCard({ name, specialty, image, onInfoPress }: Doct
       <View style={styles.content}>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.specialty}>{specialty}</Text>
-        
+
         <View style={styles.actions}>
           <TouchableOpacity style={styles.infoButton} onPress={onInfoPress}>
             <Text style={styles.infoText}>Info</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.iconRow}>
             <TouchableOpacity style={styles.iconCircle}>
-                <Ionicons name="calendar-outline" size={16} color="#4F8EF7" />
+              <Ionicons name="calendar-outline" size={16} color="#4F8EF7" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconCircle}>
-                <Ionicons name="information-circle-outline" size={18} color="#4F8EF7" />
+              <Ionicons
+                name="information-circle-outline"
+                size={18}
+                color="#4F8EF7"
+              />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconCircle}>
-                <Ionicons name="help-circle-outline" size={18} color="#4F8EF7" />
+              <Ionicons name="help-circle-outline" size={18} color="#4F8EF7" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconCircle}>
-                <Ionicons name="heart-outline" size={16} color="#4F8EF7" />
+              <Ionicons name="heart-outline" size={16} color="#4F8EF7" />
             </TouchableOpacity>
           </View>
         </View>
@@ -101,11 +110,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconCircle: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: 'white',
-      justifyContent: 'center',
-      alignItems: 'center',
-  }
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

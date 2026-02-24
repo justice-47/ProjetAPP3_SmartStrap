@@ -1,34 +1,34 @@
-import React, { useState, useEffect, useRef } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Skia } from "@shopify/react-native-skia";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Dimensions,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
-  View,
-  Dimensions,
   TouchableOpacity,
-  StatusBar,
+  View,
 } from "react-native";
+import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useSharedValue, useDerivedValue } from "react-native-reanimated";
-import { Skia } from "@shopify/react-native-skia";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 
 // --- IMPORTS CONFIG & TYPES ---
-import { WS_URL, API_URL } from "../../../src/config";
-import { WSResponse, HealthData, Diagnosis } from "../../types/health";
+import { API_URL, WS_URL } from "../../../src/config";
+import { Diagnosis, HealthData, WSResponse } from "../../types/health";
 
 // --- IMPORTS COMPOSANTS ---
-import Navigation from "../composants/navigation";
-import VitalSignCard from "../composants/VitalSignCard";
-import PPGChart from "../composants/PPGChart";
 import AIStatusCard from "../composants/AIStatusCard";
-import Cart from "../composants/cart";
-import HeartRateChart from "../composants/HeartRateChart";
-import OxygeneRateChart from "../composants/OxygeneRateChart";
 import CarouselTabs from "../composants/carrousel";
+import Cart from "../composants/cart";
 import WeeklyStatsCard from "../composants/carttest";
+import HeartRateChart from "../composants/HeartRateChart";
+import Navigation from "../composants/navigation";
+import OxygeneRateChart from "../composants/OxygeneRateChart";
+import PPGChart from "../composants/PPGChart";
+import VitalSignCard from "../composants/VitalSignCard";
 
 const { width } = Dimensions.get("window");
 const MAX_POINTS = 100;
@@ -54,10 +54,15 @@ export default function Accueil() {
   });
 
   const [profile, setProfile] = useState({ nom: "", prenom: "" });
-  const [heartRateData, setHeartRateData] = useState<{ x: Date; y: number }[]>(
-    [],
-  );
-  const [oxygenData, setOxygenData] = useState<{ x: Date; y: number }[]>([]);
+
+  // Correction pour la tolérance TypeScript générique des graphes
+  const [heartRateData, setHeartRateData] = useState<
+    { x: number; y: number; [key: string]: any }[]
+  >([]);
+  const [oxygenData, setOxygenData] = useState<
+    { x: number; y: number; [key: string]: any }[]
+  >([]);
+
   const [weeklyStats, setWeeklyStats] = useState({
     heartRateAvg: 0,
     spo2Avg: 0,
@@ -107,7 +112,7 @@ export default function Accueil() {
 
     ws.current.onclose = () => setStatus("offline");
     return () => ws.current?.close();
-  }, []);
+  }, [pointsIR]); // <-- CORRECTION : pointsIR ajouté aux dépendances
 
   // --- 2. API & PROFIL ---
   useEffect(() => {
@@ -130,13 +135,13 @@ export default function Accueil() {
 
         setHeartRateData(
           (hrData.heartRateHistory || []).map((item: any) => ({
-            x: new Date(item.x),
+            x: new Date(item.x).getTime(), // <-- En timestamp (number)
             y: item.y,
           })),
         );
         setOxygenData(
           (oxyData.oxygenHistory || []).map((item: any) => ({
-            x: new Date(item.x),
+            x: new Date(item.x).getTime(), // <-- En timestamp (number)
             y: item.y,
           })),
         );
@@ -175,27 +180,11 @@ export default function Accueil() {
     const padding = 5; // Marge de sécurité haut/bas
     const centerY = graphHeight / 2;
 
-    // --- CONFIGURATION DU ZOOM FIXE ---
-    // AJUSTEZ CES VALEURS SELON VOTRE CAPTEUR :
-
-    // 1. Facteur de gain : Détermine l'amplitude verticale des vagues.
-    // - Si c'est trop plat, augmentez (ex: 0.05, 0.1).
-    // - Si ça sort de l'écran, diminuez (ex: 0.01, 0.005).
     const scaleFactor = 0.02;
-
-    // 2. Offset de base : Valeur brute moyenne attendue pour centrer le signal.
-    // Regardez votre "Valeur brute" quand le signal est stable et mettez-la ici.
     const baselineOffset = 2000;
 
     data.forEach((val, i) => {
-      // Calcul de la position Y :
-      // On part du centre, et on monte/descend en fonction de la différence
-      // avec la baseline, multipliée par le gain.
-      // On soustrait car dans le repère écran, Y augmente vers le bas.
       let y = centerY - (val - baselineOffset) * scaleFactor;
-
-      // Clamping : On force la valeur à rester dans les limites graphiques + padding
-      // pour éviter que le trait ne sorte vilainement du cadre.
       y = Math.max(padding, Math.min(graphHeight - padding, y));
 
       if (i === 0) p.moveTo(0, y);
@@ -277,7 +266,7 @@ export default function Accueil() {
         <View style={styles.vitalsRow}>
           <VitalSignCard
             label="Pouls"
-            value={healthData.bpm}
+            value={Math.round(healthData.bpm)}
             unit="BPM"
             icon="heart"
             color="#FD4755"

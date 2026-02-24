@@ -9,18 +9,19 @@ from scipy.fft import fft, fftfreq
 from collections import deque
 
 # --- CONFIGURATION ---
-SERIAL_PORT = "COM8"  
+SERIAL_PORT = "COM6"  # Vérifiez bien votre port COM
 UDP_IP = "127.0.0.1"  
 UDP_PORT = 8001       
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PATH_RESP_TFLITE = os.path.join(BASE_DIR, 'model_resp.tflite')
-PATH_HAR_TFLITE = os.path.join(BASE_DIR, 'model_har.tflite')
+# ON REPREND LES MODELES KERAS CLASSIQUES
+PATH_RESP = os.path.join(BASE_DIR, 'BIDMC_model.keras')
+PATH_HAR = os.path.join(BASE_DIR, 'model95.keras')
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # ==========================================
-# PRE-CALCULS MATHÉMATIQUES
+# PRE-CALCULS MATHÉMATIQUES (C++ Backend)
 # ==========================================
 FS = 50.0
 
@@ -32,27 +33,27 @@ b_band, a_band = sig.butter(4, [0.75 / nyq, 5.0 / nyq], btype='band')
 N_POINTS_FFT = 1500
 freqs_axis = fftfreq(N_POINTS_FFT, 1/FS)[:N_POINTS_FFT//2]
 mask_resp = (freqs_axis >= 0.1) & (freqs_axis <= 0.7)
+input_dim_resp = np.sum(mask_resp) 
 
 # ==========================================
-# INITIALISATION TFLITE (Moteur C++)
+# INITIALISATION DES MODÈLES
 # ==========================================
 try:
-    interp_har = tf.lite.Interpreter(model_path=PATH_HAR_TFLITE)
-    interp_har.allocate_tensors()
-    input_har_idx = interp_har.get_input_details()[0]['index']
-    output_har_idx = interp_har.get_output_details()[0]['index']
-
-    interp_resp = tf.lite.Interpreter(model_path=PATH_RESP_TFLITE)
-    interp_resp.allocate_tensors()
-    input_resp_idx = interp_resp.get_input_details()[0]['index']
-    output_resp_idx = interp_resp.get_output_details()[0]['index']
-
+    print("⏳ Chargement des modèles Keras optimisés...")
+    model_resp = tf.keras.models.load_model(PATH_RESP)
+    model_har = tf.keras.models.load_model(PATH_HAR)
+    
+    # "Warmup" (Chauffe de l'IA pour éviter le lag au premier mouvement)
+    _ = model_har(np.zeros((1, 150, 4)), training=False)
+    _ = model_resp(np.zeros((1, input_dim_resp)), training=False)
+    
+    # Connexion à l'ESP32
     ser = serial.Serial(SERIAL_PORT, 115200, timeout=1) 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
-    print("✅ Pont TFLite activé. Pipeline ESP32 -> Node.js en cours...")
+    print("✅ Pipeline Binaire + Keras activé. Prêt pour le Temps Réel !")
 except Exception as e:
-    print(f"❌ Erreur critique au démarrage : {e}")
+    print(f"❌ Erreur critique : {e}")
     exit()
 
 # --- BUFFERS ---
@@ -66,7 +67,7 @@ loop_counter = 0
 ser.reset_input_buffer()
 
 def read_binary_packet(ser):
-    # Cherche le mot de synchronisation 0xBBAA envoyé par l'ESP32
+    # Cherche le mot de synchronisation 0xBBAA de l'ESP32
     while True:
         if ser.read(1) == b'\xaa':
             if ser.read(1) == b'\xbb':
@@ -78,11 +79,13 @@ def read_binary_packet(ser):
 
 while True:
     try:
+        # 1. Lecture ultra-rapide du port USB
         vals = read_binary_packet(ser)
         if vals is None: continue
 
         ir_now, hr_now, spo2_now, ax, ay, az = vals
 
+        # 2. Mise à jour des buffers
         accel_now = [ax, ay, az]
         buffer_har.append([ir_now] + accel_now)
         buffer_ir.append(ir_now)
@@ -90,33 +93,31 @@ while True:
         loop_counter += 1
 
         # ==========================================
-        # INFÉRENCE HAR (Tous les 5 cycles)
+        # INFÉRENCE HAR (Activité)
         # ==========================================
         if len(buffer_har) == 150:
             accel_total = abs(ax) + abs(ay) + abs(az)
             
+            # Anti-Hallucination : Si le poignet ne bouge pas, on force "Repos"
             if accel_total < 5.0:
                 last_state = 0 
             elif loop_counter % 5 == 0: 
                 X_window = np.array(buffer_har) 
                 
-                # Prétraitement
+                # Filtrage et Normalisation
                 X_window[:, 0] = sig.filtfilt(b_band, a_band, X_window[:, 0])
                 mean_val = np.mean(X_window, axis=0)
                 std_val = np.std(X_window, axis=0)
                 X_norm = (X_window - mean_val) / (std_val + 1e-6)
                 
-                input_data = np.expand_dims(X_norm, axis=0).astype(np.float32)
+                input_har = np.expand_dims(X_norm, axis=0)
                 
-                # Inférence TFLite
-                interp_har.set_tensor(input_har_idx, input_data)
-                interp_har.invoke()
-                prediction = interp_har.get_tensor(output_har_idx)
-                
+                # Appel IA direct (10x plus rapide que model.predict)
+                prediction = model_har(input_har, training=False).numpy()
                 last_state = int(np.argmax(prediction))
 
         # ==========================================
-        # INFÉRENCE RESPIRATION (Tous les 500 cycles)
+        # INFÉRENCE RESPIRATION
         # ==========================================
         if len(buffer_ir) == 1500 and loop_counter % 500 == 0:
             window_ir = np.array(buffer_ir)
@@ -130,19 +131,17 @@ while True:
             if np.max(spectrum_roi) > 0:
                 spectrum_roi = spectrum_roi / np.max(spectrum_roi)
             
-            input_data = np.expand_dims(spectrum_roi, axis=0).astype(np.float32)
+            input_resp = np.expand_dims(spectrum_roi, axis=0)
             
-            # Inférence TFLite
-            interp_resp.set_tensor(input_resp_idx, input_data)
-            interp_resp.invoke()
-            last_rpm = float(interp_resp.get_tensor(output_resp_idx)[0][0])
+            # Appel IA direct
+            last_rpm = float(model_resp(input_resp, training=False).numpy()[0][0])
 
         # --- ENVOI UDP VERS NODE.JS ---
         result_msg = f"{last_rpm:.2f},{last_state},{ir_now},{int(spo2_now)},{hr_now}"
         sock.sendto(result_msg.encode(), (UDP_IP, UDP_PORT))
 
     except KeyboardInterrupt:
-        print("\nArrêt du pont.")
+        print("\nArrêt du pont Python.")
         ser.close()
         sock.close()
         break
