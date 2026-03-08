@@ -14,7 +14,7 @@ import { Platform } from "react-native";
 const getApiUrl = () => {
   if (__DEV__) {
     // 192.168.1.78 est votre adresse IP locale pour le téléphone physique sur le même WiFi
-    return "http://192.168.1.16:3000";
+    return "http://10.14.221.164:3000";
   } else {
     return "https://your-production-api.com"; // Production
   }

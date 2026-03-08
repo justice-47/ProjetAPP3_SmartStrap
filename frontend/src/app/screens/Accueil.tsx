@@ -170,21 +170,19 @@ export default function Accueil() {
     fetchData();
   }, []);
 
-  // --- 3. GRAPHIQUE À ÉCHELLE FIXE (SANS ZOOM AUTO) ---
+  // --- 3. GRAPHIQUE À ÉCHELLE FIXE [-400; 400] ---
   const pathIR = useDerivedValue(() => {
     const p = Skia.Path.Make();
     const xStep = (width - 40) / (MAX_POINTS - 1);
     const data = pointsIR.value;
 
     const graphHeight = 150;
-    const padding = 5; // Marge de sécurité haut/bas
+    const padding = 5;
     const centerY = graphHeight / 2;
-
-    const scaleFactor = 0.02;
-    const baselineOffset = 2000;
+    const scaleFactor = (centerY - padding) / 400;
 
     data.forEach((val, i) => {
-      let y = centerY - (val - baselineOffset) * scaleFactor;
+      let y = centerY - val * scaleFactor;
       y = Math.max(padding, Math.min(graphHeight - padding, y));
 
       if (i === 0) p.moveTo(0, y);
